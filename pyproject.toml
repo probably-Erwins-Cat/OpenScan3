@@ -45,6 +45,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+neopixel = ["adafruit-circuitpython-neopixel-spi"]
 dev = [
   "pytest==8.3.5",
   "pytest-asyncio==0.26.0",

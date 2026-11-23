@@ -68,6 +68,7 @@ from openscan_firmware.controllers.hardware.triggers import (
     remove_trigger_controller,
 )
 from openscan_firmware.controllers.hardware.endstops import EndstopController
+from openscan_firmware.controllers.hardware.neopixel import configure_status_led, close_status_led
 from openscan_firmware.controllers.hardware.gpio import cleanup_all_pins
 
 from openscan_firmware.controllers.services.projects import get_project_manager
@@ -141,6 +142,7 @@ def _runtime_to_persisted_config() -> ScannerDeviceConfig:
         },
         motors={name: motor.settings for name, motor in _scanner_device.motors.items()},
         lights={name: light.settings for name, light in _scanner_device.lights.items()},
+        neopixel=_scanner_device.neopixel,
         triggers={name: trigger.settings for name, trigger in _scanner_device.triggers.items()},
         endstops={
             name: PersistedEndstopConfig(settings=endstop.settings)
@@ -546,6 +548,7 @@ async def _initialize_with_config(config: dict | ScannerDeviceConfig, detect_cam
     """Internal helper that assumes the configuration dict is already resolved."""
     global _scanner_device
     config_dict = ScannerDeviceConfig.model_validate(config).model_dump(mode="json")
+    close_status_led()
     # Load environment variables
     load_dotenv()
 
@@ -704,6 +707,7 @@ async def _initialize_with_config(config: dict | ScannerDeviceConfig, detect_cam
         cameras=camera_objects,
         motors=motor_objects,
         lights=light_objects,
+        neopixel=config_dict["neopixel"],
         triggers=trigger_objects,
         endstops=endstop_objects,
 
@@ -719,6 +723,7 @@ async def _initialize_with_config(config: dict | ScannerDeviceConfig, detect_cam
     # beware, PrivateAttr are NOT initialized in constructor
     # nor an error message is shown...
     _scanner_device._initialized=True
+    configure_status_led(_scanner_device.neopixel)
 
     # initialize inactivity timer
     if _scanner_device.idle_timeout > 0:
@@ -798,6 +803,7 @@ def shutdown(with_saving = False):
 
 
 def cleanup_and_exit():
+    close_status_led()
     cam_controllers = get_all_camera_controllers()
     for name, controller in cam_controllers.items():
         try:

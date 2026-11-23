@@ -5,7 +5,7 @@ from pydantic import BaseModel, PrivateAttr, ConfigDict, Field, model_validator
 
 from openscan_firmware.config.camera import CameraSettings
 from openscan_firmware.config.endstop import EndstopConfig
-from openscan_firmware.config.light import LightConfig
+from openscan_firmware.config.light import LightConfig, NeoPixelConfig
 from openscan_firmware.config.motor import MotorConfig
 from openscan_firmware.config.trigger import TriggerConfig
 from openscan_firmware.models.camera import Camera, CameraType
@@ -44,6 +44,7 @@ class ScannerDevice(BaseModel):
     cameras: dict[str, Camera]
     motors: dict[str, Motor]
     lights: dict[str, Light]
+    neopixel: NeoPixelConfig | None = None
     triggers: dict[str, Trigger] = Field(default_factory=dict)
     endstops: Optional[dict[str, Endstop]]
     
@@ -92,6 +93,7 @@ class ScannerDeviceConfig(BaseModel):
     cameras: dict[str, PersistedCameraConfig] = Field(default_factory=dict)
     motors: dict[str, MotorConfig] = Field(default_factory=dict)
     lights: dict[str, LightConfig] = Field(default_factory=dict)
+    neopixel: NeoPixelConfig | None = None
     triggers: dict[str, TriggerConfig] = Field(default_factory=dict)
     endstops: dict[str, PersistedEndstopConfig] | None = None
     idle_timeout: float = 0.0

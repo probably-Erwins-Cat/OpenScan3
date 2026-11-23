@@ -8,6 +8,7 @@ from typing import Any, Callable, TYPE_CHECKING
 from pydantic import BaseModel
 
 from openscan_firmware.models.task import Task
+from openscan_firmware.controllers.hardware.neopixel import update_scan_status
 from openscan_firmware.routers.websocket import WebSocketHub, get_websocket_hub
 
 if TYPE_CHECKING:
@@ -27,6 +28,7 @@ class TaskEventPublisher:
         self._hub_getter = hub_getter or get_websocket_hub
 
     async def publish(self, task: Task, event_type: TaskEventType = TaskEventType.UPDATE) -> None:
+        update_scan_status(task)
         hub: WebSocketHub = self._hub_getter()
         event = TaskEventMessage.from_task(task, event_type)
         await hub.broadcast_json("tasks", event.model_dump(mode="json"))

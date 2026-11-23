@@ -22,6 +22,7 @@ from openscan_firmware.controllers.hardware.interfaces import HardwareEvent, Sta
 from openscan_firmware.config.motor import MotorConfig
 from openscan_firmware.models.motor import Motor
 from openscan_firmware.controllers.hardware import gpio
+from openscan_firmware.controllers.hardware.neopixel import homing
 from openscan_firmware.controllers.settings import Settings
 from openscan_firmware.controllers.services.device_events import (
     notify_busy_change,
@@ -322,10 +323,10 @@ class MotorController(StatefulHardware, SleepCapableHardware):
         # just in case, even if it doesn't move because already at home...
         inactivity_timer.reset()
 
-        # trigger a home event
-        await self.send_event(HardwareEvent.HOME_EVENT)
-        
-        await self.move_to(self.settings.home_angle)
+        with homing():
+            # Calibration triggered by HOME_EVENT is nested inside this operation.
+            await self.send_event(HardwareEvent.HOME_EVENT)
+            await self.move_to(self.settings.home_angle)
 
     async def calibrate(self, *, force: bool = False) -> None:
         """Internal method to move motor to home angle after calibrating to endstop.
@@ -338,11 +339,12 @@ class MotorController(StatefulHardware, SleepCapableHardware):
             inactivity_timer.reset()
             return
         # mark as not calibrated until the routine finishes successfully
-        self._calibrated = False
-        await self.move_to_endstop()
-        await asyncio.sleep(3)
-        await self.move_to(self.settings.home_angle)
-        self._calibrated = True
+        with homing():
+            self._calibrated = False
+            await self.move_to_endstop()
+            await asyncio.sleep(3)
+            await self.move_to(self.settings.home_angle)
+            self._calibrated = True
 
     def _pre_calculate_step_times(self, steps: int, min_interval=0.0001) -> List[float]:
         """
